@@ -24,7 +24,7 @@ namespace OpenTK.Mathematics
     /// </remarks>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector3i : IEquatable<Vector3i>, IFormattable
+    public struct Vector3i : IEquatable<Vector3i>
     {
         /// <summary>
         /// The X component of the Vector3i.
@@ -160,16 +160,6 @@ namespace OpenTK.Mathematics
         /// Defines a unit-length Vector3i that points towards the Z-axis.
         /// </summary>
         public static readonly Vector3i UnitZ = new Vector3i(0, 0, 1);
-
-        /// <summary>
-        /// Defines an instance with all components set to 0.
-        /// </summary>
-        public static readonly Vector3i Zero = new Vector3i(0, 0, 0);
-
-        /// <summary>
-        /// Defines an instance with all components set to 1.
-        /// </summary>
-        public static readonly Vector3i One = new Vector3i(1, 1, 1);
 
         /// <summary>
         /// Defines the size of the Vector3i struct in bytes.
@@ -345,7 +335,7 @@ namespace OpenTK.Mathematics
             result.X = Math.Min(a.X, b.X);
             result.Y = Math.Min(a.Y, b.Y);
             result.Z = Math.Min(a.Z, b.Z);
-            return result;
+            return a;
         }
 
         /// <summary>
@@ -706,21 +696,6 @@ namespace OpenTK.Mathematics
         }
 
         /// <summary>
-        /// Component-wise division between the specified instance by a scale vector.
-        /// </summary>
-        /// <param name="vec">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of the division.</returns>
-        [Pure]
-        public static Vector3i operator /(Vector3i vec, Vector3i scale)
-        {
-            vec.X /= scale.X;
-            vec.Y /= scale.Y;
-            vec.Z /= scale.Z;
-            return vec;
-        }
-
-        /// <summary>
         /// Compares two instances for equality.
         /// </summary>
         /// <param name="left">The first instance.</param>
@@ -787,33 +762,10 @@ namespace OpenTK.Mathematics
             return new Vector3i(values.X, values.Y, values.Z);
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
         public override string ToString()
         {
-            return ToString(null, null);
-        }
-
-        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
-
-        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
-        public string ToString(IFormatProvider formatProvider)
-        {
-            return ToString(null, formatProvider);
-        }
-
-        /// <inheritdoc />
-        public string ToString(string format, IFormatProvider formatProvider)
-        {
-            return string.Format(
-                "({0}{3} {1}{3} {2})",
-                X.ToString(format, formatProvider),
-                Y.ToString(format, formatProvider),
-                Z.ToString(format, formatProvider),
-                MathHelper.GetListSeparator(formatProvider));
+            return string.Format("({0}{3} {1}{3} {2})", X, Y, Z, MathHelper.ListSeparator);
         }
 
         /// <inheritdoc />

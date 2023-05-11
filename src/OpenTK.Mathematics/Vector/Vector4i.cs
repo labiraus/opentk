@@ -24,7 +24,7 @@ namespace OpenTK.Mathematics
     /// </remarks>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector4i : IEquatable<Vector4i>, IFormattable
+    public struct Vector4i : IEquatable<Vector4i>
     {
         /// <summary>
         /// The X component of the Vector4i.
@@ -211,7 +211,7 @@ namespace OpenTK.Mathematics
         public static readonly Vector4i UnitW = new Vector4i(0, 0, 0, 1);
 
         /// <summary>
-        /// Defines an instance with all components set to 0.
+        /// Defines a zero-length <see cref="Vector4i"/>.
         /// </summary>
         public static readonly Vector4i Zero = new Vector4i(0, 0, 0, 0);
 
@@ -1576,22 +1576,6 @@ namespace OpenTK.Mathematics
         }
 
         /// <summary>
-        /// Component-wise division between the specified instance by a scale vector.
-        /// </summary>
-        /// <param name="vec">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of the division.</returns>
-        [Pure]
-        public static Vector4i operator /(Vector4i vec, Vector4i scale)
-        {
-            vec.X /= scale.X;
-            vec.Y /= scale.Y;
-            vec.Z /= scale.Z;
-            vec.W /= scale.W;
-            return vec;
-        }
-
-        /// <summary>
         /// Compares two instances for equality.
         /// </summary>
         /// <param name="left">The first instance.</param>
@@ -1683,34 +1667,10 @@ namespace OpenTK.Mathematics
             return new Vector4i(values.X, values.Y, values.Z, values.W);
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
         public override string ToString()
         {
-            return ToString(null, null);
-        }
-
-        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
-
-        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
-        public string ToString(IFormatProvider formatProvider)
-        {
-            return ToString(null, formatProvider);
-        }
-
-        /// <inheritdoc />
-        public string ToString(string format, IFormatProvider formatProvider)
-        {
-            return string.Format(
-                "({0}{4} {1}{4} {2}{4} {3})",
-                X.ToString(format, formatProvider),
-                Y.ToString(format, formatProvider),
-                Z.ToString(format, formatProvider),
-                W.ToString(format, formatProvider),
-                MathHelper.GetListSeparator(formatProvider));
+            return string.Format("({0}{4} {1}{4} {2}{4} {3})", X, Y, Z, W, MathHelper.ListSeparator);
         }
 
         /// <inheritdoc />

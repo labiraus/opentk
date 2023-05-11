@@ -33,7 +33,7 @@ namespace OpenTK.Mathematics
     /// <seealso cref="Matrix4"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Matrix4d : IEquatable<Matrix4d>, IFormattable
+    public struct Matrix4d : IEquatable<Matrix4d>
     {
         /// <summary>
         /// Top row of the matrix.
@@ -1759,29 +1759,7 @@ namespace OpenTK.Mathematics
         /// <inheritdoc />
         public override string ToString()
         {
-            return ToString(null, null);
-        }
-
-        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
-
-        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
-        public string ToString(IFormatProvider formatProvider)
-        {
-            return ToString(null, formatProvider);
-        }
-
-        /// <inheritdoc/>
-        public string ToString(string format, IFormatProvider formatProvider)
-        {
-            var row0 = Row0.ToString(format, formatProvider);
-            var row1 = Row1.ToString(format, formatProvider);
-            var row2 = Row2.ToString(format, formatProvider);
-            var row3 = Row3.ToString(format, formatProvider);
-            return $"{row0}\n{row1}\n{row2}\n{row3}";
+            return $"{Row0}\n{Row1}\n{Row2}\n{Row3}";
         }
 
         /// <summary>
