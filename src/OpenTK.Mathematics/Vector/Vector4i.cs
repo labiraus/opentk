@@ -24,7 +24,7 @@ namespace OpenTK.Mathematics
     /// </remarks>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector4i : IEquatable<Vector4i>
+    public struct Vector4i : IEquatable<Vector4i>, IFormattable
     {
         /// <summary>
         /// The X component of the Vector4i.
@@ -211,7 +211,7 @@ namespace OpenTK.Mathematics
         public static readonly Vector4i UnitW = new Vector4i(0, 0, 0, 1);
 
         /// <summary>
-        /// Defines a zero-length <see cref="Vector4i"/>.
+        /// Defines an instance with all components set to 0.
         /// </summary>
         public static readonly Vector4i Zero = new Vector4i(0, 0, 0, 0);
 
@@ -396,11 +396,12 @@ namespace OpenTK.Mathematics
         [Pure]
         public static Vector4i ComponentMin(Vector4i a, Vector4i b)
         {
-            a.X = a.X < b.X ? a.X : b.X;
-            a.Y = a.Y < b.Y ? a.Y : b.Y;
-            a.Z = a.Z < b.Z ? a.Z : b.Z;
-            a.W = a.W < b.W ? a.W : b.W;
-            return a;
+            Vector4i result;
+            result.X = Math.Min(a.X, b.X);
+            result.Y = Math.Min(a.Y, b.Y);
+            result.Z = Math.Min(a.Z, b.Z);
+            result.W = Math.Min(a.W, b.W);
+            return result;
         }
 
         /// <summary>
@@ -411,10 +412,10 @@ namespace OpenTK.Mathematics
         /// <param name="result">The component-wise minimum.</param>
         public static void ComponentMin(in Vector4i a, in Vector4i b, out Vector4i result)
         {
-            result.X = a.X < b.X ? a.X : b.X;
-            result.Y = a.Y < b.Y ? a.Y : b.Y;
-            result.Z = a.Z < b.Z ? a.Z : b.Z;
-            result.W = a.W < b.W ? a.W : b.W;
+            result.X = Math.Min(a.X, b.X);
+            result.Y = Math.Min(a.Y, b.Y);
+            result.Z = Math.Min(a.Z, b.Z);
+            result.W = Math.Min(a.W, b.W);
         }
 
         /// <summary>
@@ -426,11 +427,12 @@ namespace OpenTK.Mathematics
         [Pure]
         public static Vector4i ComponentMax(Vector4i a, Vector4i b)
         {
-            a.X = a.X > b.X ? a.X : b.X;
-            a.Y = a.Y > b.Y ? a.Y : b.Y;
-            a.Z = a.Z > b.Z ? a.Z : b.Z;
-            a.W = a.W > b.W ? a.W : b.W;
-            return a;
+            Vector4i result;
+            result.X = Math.Max(a.X, b.X);
+            result.Y = Math.Max(a.Y, b.Y);
+            result.Z = Math.Max(a.Z, b.Z);
+            result.W = Math.Max(a.W, b.W);
+            return result;
         }
 
         /// <summary>
@@ -441,10 +443,10 @@ namespace OpenTK.Mathematics
         /// <param name="result">The component-wise maximum.</param>
         public static void ComponentMax(in Vector4i a, in Vector4i b, out Vector4i result)
         {
-            result.X = a.X > b.X ? a.X : b.X;
-            result.Y = a.Y > b.Y ? a.Y : b.Y;
-            result.Z = a.Z > b.Z ? a.Z : b.Z;
-            result.W = a.W > b.W ? a.W : b.W;
+            result.X = Math.Max(a.X, b.X);
+            result.Y = Math.Max(a.Y, b.Y);
+            result.Z = Math.Max(a.Z, b.Z);
+            result.W = Math.Max(a.W, b.W);
         }
 
         /// <summary>
@@ -457,11 +459,12 @@ namespace OpenTK.Mathematics
         [Pure]
         public static Vector4i Clamp(Vector4i vec, Vector4i min, Vector4i max)
         {
-            vec.X = MathHelper.Clamp(vec.X, min.X, max.X);
-            vec.Y = MathHelper.Clamp(vec.Y, min.Y, max.Y);
-            vec.Z = MathHelper.Clamp(vec.Z, min.Z, max.Z);
-            vec.W = MathHelper.Clamp(vec.W, min.W, max.W);
-            return vec;
+            Vector4i result;
+            result.X = MathHelper.Clamp(vec.X, min.X, max.X);
+            result.Y = MathHelper.Clamp(vec.Y, min.Y, max.Y);
+            result.Z = MathHelper.Clamp(vec.Z, min.Z, max.Z);
+            result.W = MathHelper.Clamp(vec.W, min.W, max.W);
+            return result;
         }
 
         /// <summary>
@@ -1573,6 +1576,22 @@ namespace OpenTK.Mathematics
         }
 
         /// <summary>
+        /// Component-wise division between the specified instance by a scale vector.
+        /// </summary>
+        /// <param name="vec">Left operand.</param>
+        /// <param name="scale">Right operand.</param>
+        /// <returns>Result of the division.</returns>
+        [Pure]
+        public static Vector4i operator /(Vector4i vec, Vector4i scale)
+        {
+            vec.X /= scale.X;
+            vec.Y /= scale.Y;
+            vec.Z /= scale.Z;
+            vec.W /= scale.W;
+            return vec;
+        }
+
+        /// <summary>
         /// Compares two instances for equality.
         /// </summary>
         /// <param name="left">The first instance.</param>
@@ -1664,10 +1683,34 @@ namespace OpenTK.Mathematics
             return new Vector4i(values.X, values.Y, values.Z, values.W);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return string.Format("({0}{4} {1}{4} {2}{4} {3})", X, Y, Z, W, MathHelper.ListSeparator);
+            return ToString(null, null);
+        }
+
+        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
+        public string ToString(string format)
+        {
+            return ToString(format, null);
+        }
+
+        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
+        public string ToString(IFormatProvider formatProvider)
+        {
+            return ToString(null, formatProvider);
+        }
+
+        /// <inheritdoc />
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return string.Format(
+                "({0}{4} {1}{4} {2}{4} {3})",
+                X.ToString(format, formatProvider),
+                Y.ToString(format, formatProvider),
+                Z.ToString(format, formatProvider),
+                W.ToString(format, formatProvider),
+                MathHelper.GetListSeparator(formatProvider));
         }
 
         /// <inheritdoc />

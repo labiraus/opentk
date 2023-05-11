@@ -11,6 +11,7 @@ using System;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Xml.Serialization;
 
 namespace OpenTK.Mathematics
 {
@@ -18,8 +19,12 @@ namespace OpenTK.Mathematics
     /// Defines an axis-aligned 2d box (rectangle).
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct Box2i : IEquatable<Box2i>
+    [Serializable]
+    public struct Box2i : IEquatable<Box2i>, IFormattable
     {
+        /// <summary>
+        /// An empty box with Min (0, 0) and Max (0, 0).
+        /// </summary>
         public static readonly Box2i Empty = new Box2i(0, 0, 0, 0);
 
         private Vector2i _min;
@@ -32,15 +37,7 @@ namespace OpenTK.Mathematics
             get => _min;
             set
             {
-                if (value.X > _max.X)
-                {
-                    _max.X = value.X;
-                }
-                if (value.Y > _max.Y)
-                {
-                    _max.Y = value.Y;
-                }
-
+                _max = Vector2i.ComponentMax(_max, value);
                 _min = value;
             }
         }
@@ -55,15 +52,7 @@ namespace OpenTK.Mathematics
             get => _max;
             set
             {
-                if (value.X < _min.X)
-                {
-                    _min.X = value.X;
-                }
-                if (value.Y < _min.Y)
-                {
-                    _min.Y = value.Y;
-                }
-
+                _min = Vector2i.ComponentMin(_min, value);
                 _max = value;
             }
         }
@@ -94,6 +83,7 @@ namespace OpenTK.Mathematics
         /// <summary>
         /// Gets a vector describing the size of the Box2i structure.
         /// </summary>
+        [XmlIgnore]
         public Vector2i Size
         {
             get => Max - Min;
@@ -102,6 +92,7 @@ namespace OpenTK.Mathematics
         /// <summary>
         /// Gets or sets a vector describing half the size of the box.
         /// </summary>
+        [XmlIgnore]
         public Vector2i HalfSize
         {
             get => Size / 2;
@@ -117,9 +108,10 @@ namespace OpenTK.Mathematics
         /// Gets a vector describing the center of the box.
         /// </summary>
         /// to avoid annoying off-by-one errors in box placement, no setter is provided for this property
+        [XmlIgnore]
         public Vector2 Center
         {
-            get => ((_min + _max).ToVector2() * 0.5f) + _min.ToVector2();
+            get => _min + ((_max - _min).ToVector2() * 0.5f);
         }
 
         /// <summary>
@@ -128,7 +120,32 @@ namespace OpenTK.Mathematics
         /// <param name="point">The point to query.</param>
         /// <returns>Whether this box contains the point.</returns>
         [Pure]
+        [Obsolete("This function excludes borders even though it's documentation says otherwise. Use ContainsInclusive and ContainsExclusive for the desired behaviour.")]
         public bool Contains(Vector2i point)
+        {
+            return _min.X < point.X && point.X < _max.X &&
+                   _min.Y < point.Y && point.Y < _max.Y;
+        }
+
+        /// <summary>
+        /// Returns whether the box contains the specified point (borders inclusive).
+        /// </summary>
+        /// <param name="point">The point to query.</param>
+        /// <returns>Whether this box contains the point.</returns>
+        [Pure]
+        public bool ContainsInclusive(Vector2i point)
+        {
+            return _min.X <= point.X && point.X <= _max.X &&
+                   _min.Y <= point.Y && point.Y <= _max.Y;
+        }
+
+        /// <summary>
+        /// Returns whether the box contains the specified point (borders exclusive).
+        /// </summary>
+        /// <param name="point">The point to query.</param>
+        /// <returns>Whether this box contains the point.</returns>
+        [Pure]
+        public bool ContainsExclusive(Vector2i point)
         {
             return _min.X < point.X && point.X < _max.X &&
                    _min.Y < point.Y && point.Y < _max.Y;
@@ -147,11 +164,12 @@ namespace OpenTK.Mathematics
         {
             if (boundaryInclusive)
             {
-                return _min.X <= point.X && point.X <= _max.X &&
-                       _min.Y <= point.Y && point.Y <= _max.Y;
+                return ContainsInclusive(point);
             }
-            return _min.X < point.X && point.X < _max.X &&
-                   _min.Y < point.Y && point.Y < _max.Y;
+            else
+            {
+                return ContainsExclusive(point);
+            }
         }
 
         /// <summary>
@@ -196,10 +214,10 @@ namespace OpenTK.Mathematics
         [Pure]
         public float DistanceToNearestEdge(Vector2i point)
         {
-            var distX = new Vector2(
+            var dist = new Vector2(
                 Math.Max(0f, Math.Max(_min.X - point.X, point.X - _max.X)),
                 Math.Max(0f, Math.Max(_min.Y - point.Y, point.Y - _max.Y)));
-            return distX.Length;
+            return dist.Length;
         }
 
         /// <summary>
@@ -208,8 +226,8 @@ namespace OpenTK.Mathematics
         /// <param name="distance">The distance to translate the box.</param>
         public void Translate(Vector2i distance)
         {
-            Min += distance;
-            Max += distance;
+            _min += distance;
+            _max += distance;
         }
 
         /// <summary>
@@ -296,6 +314,16 @@ namespace OpenTK.Mathematics
             return !(left == right);
         }
 
+        /// <summary>
+        /// Converts this <see cref="Box2i"/> to a <see cref="System.Drawing.Rectangle"/> using <see cref="Min"/> as the position and <see cref="Size"/> as the size.
+        /// </summary>
+        /// <param name="box">The box to cast.</param>
+        [Pure]
+        public static explicit operator System.Drawing.Rectangle(Box2i box)
+        {
+            return new System.Drawing.Rectangle((System.Drawing.Point)box.Min, (System.Drawing.Size)box.Size);
+        }
+
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
@@ -318,7 +346,25 @@ namespace OpenTK.Mathematics
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{Min} - {Max}";
+            return ToString(null, null);
+        }
+
+        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
+        public string ToString(string format)
+        {
+            return ToString(format, null);
+        }
+
+        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
+        public string ToString(IFormatProvider formatProvider)
+        {
+            return ToString(null, formatProvider);
+        }
+
+        /// <inheritdoc/>
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return $"{Min.ToString(format, formatProvider)} - {Max.ToString(format, formatProvider)}";
         }
     }
 }

@@ -24,7 +24,7 @@ namespace OpenTK.Mathematics
     /// </remarks>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector3i : IEquatable<Vector3i>
+    public struct Vector3i : IEquatable<Vector3i>, IFormattable
     {
         /// <summary>
         /// The X component of the Vector3i.
@@ -160,6 +160,16 @@ namespace OpenTK.Mathematics
         /// Defines a unit-length Vector3i that points towards the Z-axis.
         /// </summary>
         public static readonly Vector3i UnitZ = new Vector3i(0, 0, 1);
+
+        /// <summary>
+        /// Defines an instance with all components set to 0.
+        /// </summary>
+        public static readonly Vector3i Zero = new Vector3i(0, 0, 0);
+
+        /// <summary>
+        /// Defines an instance with all components set to 1.
+        /// </summary>
+        public static readonly Vector3i One = new Vector3i(1, 1, 1);
 
         /// <summary>
         /// Defines the size of the Vector3i struct in bytes.
@@ -331,10 +341,11 @@ namespace OpenTK.Mathematics
         [Pure]
         public static Vector3i ComponentMin(Vector3i a, Vector3i b)
         {
-            a.X = a.X < b.X ? a.X : b.X;
-            a.Y = a.Y < b.Y ? a.Y : b.Y;
-            a.Z = a.Z < b.Z ? a.Z : b.Z;
-            return a;
+            Vector3i result;
+            result.X = Math.Min(a.X, b.X);
+            result.Y = Math.Min(a.Y, b.Y);
+            result.Z = Math.Min(a.Z, b.Z);
+            return result;
         }
 
         /// <summary>
@@ -345,9 +356,9 @@ namespace OpenTK.Mathematics
         /// <param name="result">The component-wise minimum.</param>
         public static void ComponentMin(in Vector3i a, in Vector3i b, out Vector3i result)
         {
-            result.X = a.X < b.X ? a.X : b.X;
-            result.Y = a.Y < b.Y ? a.Y : b.Y;
-            result.Z = a.Z < b.Z ? a.Z : b.Z;
+            result.X = Math.Min(a.X, b.X);
+            result.Y = Math.Min(a.Y, b.Y);
+            result.Z = Math.Min(a.Z, b.Z);
         }
 
         /// <summary>
@@ -359,10 +370,11 @@ namespace OpenTK.Mathematics
         [Pure]
         public static Vector3i ComponentMax(Vector3i a, Vector3i b)
         {
-            a.X = a.X > b.X ? a.X : b.X;
-            a.Y = a.Y > b.Y ? a.Y : b.Y;
-            a.Z = a.Z > b.Z ? a.Z : b.Z;
-            return a;
+            Vector3i result;
+            result.X = Math.Max(a.X, b.X);
+            result.Y = Math.Max(a.Y, b.Y);
+            result.Z = Math.Max(a.Z, b.Z);
+            return result;
         }
 
         /// <summary>
@@ -373,9 +385,9 @@ namespace OpenTK.Mathematics
         /// <param name="result">The component-wise maximum.</param>
         public static void ComponentMax(in Vector3i a, in Vector3i b, out Vector3i result)
         {
-            result.X = a.X > b.X ? a.X : b.X;
-            result.Y = a.Y > b.Y ? a.Y : b.Y;
-            result.Z = a.Z > b.Z ? a.Z : b.Z;
+            result.X = Math.Max(a.X, b.X);
+            result.Y = Math.Max(a.Y, b.Y);
+            result.Z = Math.Max(a.Z, b.Z);
         }
 
         /// <summary>
@@ -388,10 +400,11 @@ namespace OpenTK.Mathematics
         [Pure]
         public static Vector3i Clamp(Vector3i vec, Vector3i min, Vector3i max)
         {
-            vec.X = MathHelper.Clamp(vec.X, min.X, max.X);
-            vec.Y = MathHelper.Clamp(vec.Y, min.Y, max.Y);
-            vec.Z = MathHelper.Clamp(vec.Z, min.Z, max.Z);
-            return vec;
+            Vector3i result;
+            result.X = MathHelper.Clamp(vec.X, min.X, max.X);
+            result.Y = MathHelper.Clamp(vec.Y, min.Y, max.Y);
+            result.Z = MathHelper.Clamp(vec.Z, min.Z, max.Z);
+            return result;
         }
 
         /// <summary>
@@ -693,6 +706,21 @@ namespace OpenTK.Mathematics
         }
 
         /// <summary>
+        /// Component-wise division between the specified instance by a scale vector.
+        /// </summary>
+        /// <param name="vec">Left operand.</param>
+        /// <param name="scale">Right operand.</param>
+        /// <returns>Result of the division.</returns>
+        [Pure]
+        public static Vector3i operator /(Vector3i vec, Vector3i scale)
+        {
+            vec.X /= scale.X;
+            vec.Y /= scale.Y;
+            vec.Z /= scale.Z;
+            return vec;
+        }
+
+        /// <summary>
         /// Compares two instances for equality.
         /// </summary>
         /// <param name="left">The first instance.</param>
@@ -759,10 +787,33 @@ namespace OpenTK.Mathematics
             return new Vector3i(values.X, values.Y, values.Z);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return string.Format("({0}{3} {1}{3} {2})", X, Y, Z, MathHelper.ListSeparator);
+            return ToString(null, null);
+        }
+
+        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
+        public string ToString(string format)
+        {
+            return ToString(format, null);
+        }
+
+        /// <inheritdoc cref="ToString(string, IFormatProvider)"/>
+        public string ToString(IFormatProvider formatProvider)
+        {
+            return ToString(null, formatProvider);
+        }
+
+        /// <inheritdoc />
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return string.Format(
+                "({0}{3} {1}{3} {2})",
+                X.ToString(format, formatProvider),
+                Y.ToString(format, formatProvider),
+                Z.ToString(format, formatProvider),
+                MathHelper.GetListSeparator(formatProvider));
         }
 
         /// <inheritdoc />

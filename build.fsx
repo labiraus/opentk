@@ -8,6 +8,15 @@ open Fake.IO
 
 #r "paket:
 storage: packages
+
+// https://github.com/fsprojects/FAKE/issues/2722
+nuget Microsoft.Build 17.3.2
+nuget Microsoft.Build.Framework 17.3.2
+nuget Microsoft.Build.Tasks.Core 17.3.2
+nuget Microsoft.Build.Utilities.Core 17.3.2
+
+nuget FSharp.Core 6.0.0.0
+
 nuget Fake.IO.FileSystem
 nuget Fake.DotNet.MSBuild
 nuget Fake.DotNet.Testing.XUnit2
@@ -47,7 +56,7 @@ let iconUrl = "https://raw.githubusercontent.com/opentk/opentk/master/docs/files
 let description =
     "The Open Toolkit is set of fast, low-level C# bindings for OpenGL, OpenGL ES, OpenAL and OpenCL. It runs on all major platforms and powers hundreds of apps, games and scientific research.
     It provides bindings for GLFW windowing, input and a game loop, and is the perfect start for your own game engine.
-    
+
 
     OpenTK comes with simple and easy to follow tutorials for learning *modern* OpenGL. These are written by the community and represent all of the best practices to get you started.
     Learn how to use OpenTK here:
@@ -94,18 +103,12 @@ let testDir = binDir </> "test"
 // Projects & Assemblies
 // ---------
 
-let toolProjects =
-    !! "src/Generators/**/*.??proj"
-
 let releaseProjects =
     !! "src/**/*.??proj"
-    -- "src/Generator/**"
     -- "src/Generator.Bind/**"
     -- "src/Generator.Converter/**"
     -- "src/Generator.Rewrite/**"
-    -- "src/SpecificationOpenGL/**"
     -- "src/OpenAL/OpenALGenerator/**"
-    -- "src/OpenAL/OpenALTest/**"
     -- "src/OpenAL/OpenTK.OpenAL.Extensions/**"
 
 
@@ -118,9 +121,6 @@ let ciTestProjects =
     allTestProjects
     -- "tests/**/*.Integration.??proj"
 
-let nugetCommandRunnerPath =
-    ".fake/build.fsx/packages/NuGet.CommandLine/tools/NuGet.exe" |> Fake.IO.Path.convertWindowsToCurrentPath
-
 // ---------
 // Other Targets
 // ---------
@@ -128,8 +128,8 @@ let nugetCommandRunnerPath =
 // Lazily install DotNet SDK in the correct version if not available
 let install =
     lazy
-        (if (DotNet.getVersion id).StartsWith "3" then id
-         else DotNet.install (fun options -> { options with Version = DotNet.Version "3.1.100" }))
+        (if (DotNet.getVersion id).StartsWith "6" then id
+         else DotNet.install (fun options -> { options with Version = DotNet.Version "6.0.200" }))
 
 // Define general properties across various commands (with arguments)
 let inline withWorkDir wd = DotNet.Options.lift install.Value >> DotNet.Options.withWorkingDirectory wd
@@ -139,7 +139,7 @@ let inline dotnetSimple arg = DotNet.Options.lift install.Value arg
 
 module DotNet =
     let run optionsFn framework projFile args =
-        DotNet.exec (dotnetSimple >> optionsFn) "run" (sprintf "-f %s -p \"%s\" %s" framework projFile args)
+        DotNet.exec (dotnetSimple >> optionsFn) "run" (sprintf "-f %s --project \"%s\" -- %s" framework projFile args)
 
     let runWithDefaultOptions framework projFile args = run id framework projFile args
 
@@ -150,46 +150,15 @@ let specSource = "https://raw.githubusercontent.com/frederikja163/OpenGL-Registr
 //let bindingsOutputPath =
 //    ""
 
-let asArgs args = args |> String.concat " "
+let asArgs args = args |> List.map (fun ( x: string) -> sprintf "\"%s\"" x) |> String.concat " "
 
-
+// TODO: We can possibly remove this as this is in the OpenTK.Graphics project now. All we need to do is make sure the file gets deleted so that the build will download it.
 Target.create "UpdateSpec" (fun _ ->
     Trace.log " --- Updating spec --- "
     specSource
     |> Fake.Net.Http.downloadFile ("src" </> "gl.xml")
     |> Trace.logfn "Saved spec at %s"
     ())
-
-Target.create "UpdateBindings" (fun _ ->
-    Trace.log " --- Updating bindings --- "
-    let framework = "netcoreapp31"
-    let projFile = "src/Generator/Generator.fsproj"
-
-    let args =
-        [ sprintf "-i %s" (System.IO.Path.GetFullPath pathToSpec)
-          "-o " + (System.IO.Path.GetFullPath "src" </> "OpenGL") ]
-        |> asArgs
-    DotNet.runWithDefaultOptions framework projFile args |> ignore)
-
-Target.create "UpdateBindingsRewrite" (fun _ ->
-    Trace.log " --- Updating bindings (rewrite) --- "
-    let framework = "netcoreapp31"
-    let projFile = "src/Generator.Bind/Generator.Bind.csproj"
-
-    let args = [  ] |> asArgs
-    DotNet.runWithDefaultOptions framework projFile args |> ignore)
-
-Target.create "RewriteBindings" (fun _ ->
-    Trace.log " --- Rewriting bindings (calli) --- "
-    let framework = "netcoreapp31"
-    let projFile = "src/Generator.Rewrite/Generator.Rewrite.csproj"
-    let bindingsFile = "OpenTK.Graphics.dll"
-    let bindingsOutput = "src/OpenTK.Graphics/bin/Release/netstandard2.1"
-
-    let args =
-        [ "-a " + (System.IO.Path.GetFullPath bindingsOutput </> bindingsFile)
-        ] |> asArgs
-    DotNet.runWithDefaultOptions framework projFile args |> ignore)
 
 // ---------
 // Build Targets
@@ -207,6 +176,7 @@ Target.create "Clean" <| fun _ ->
     -- ("./src" </> "OpenTK.Graphics" </> "OpenGL2/Helper.cs")
     -- ("./src" </> "OpenTK.Graphics" </> "OpenGL4/Helper.cs")
     -- ("./src" </> "OpenTK.Graphics" </> "Wgl/*.*")
+    -- ("./src" </> "OpenTK.Graphics" </> "Egl/*.*")
     -- ("./src" </> "OpenTK.Graphics" </> "paket")
     |> Seq.iter(Shell.rm)
 
@@ -262,13 +232,13 @@ Target.create "RunCITests" (fun _ ->
     Trace.log " --- Testing CI-safe projects in parallel --- "
 
 
-    //Looks overkill for only one csproj but just add 2 or 3 csproj and this will scale a lot better
+    // Looks overkill for only one csproj but just add 2 or 3 csproj and this will scale a lot better
     runTests ciTestProjects)
 
 Target.create "RunAllTests" (fun _ ->
     Trace.log " --- Testing ALL projects in parallel --- "
 
-    //Looks overkill for only one csproj but just add 2 or 3 csproj and this will scale a lot better
+    // Looks overkill for only one csproj but just add 2 or 3 csproj and this will scale a lot better
     runTests allTestProjects)
 
 
@@ -277,7 +247,7 @@ Target.create "CreateNuGetPackage" (fun _ ->
     let notes = release.Notes |> List.reduce (fun s1 s2 -> s1 + "\n" + s2)
 
     for proj in releaseProjects do
-        Trace.logf "Creating nuget package for Project: %s" proj
+        Trace.logf "Creating nuget package for Project: %s\n" proj
 
         let dir = Path.GetDirectoryName proj
         let templatePath = Path.Combine(dir, "paket")
@@ -289,6 +259,7 @@ Target.create "CreateNuGetPackage" (fun _ ->
         File.WriteAllText(templatePath + ".template", newTmplCont)
         let setParams (p:Paket.PaketPackParams) =
             { p with
+                ToolType = ToolType.CreateLocalTool()
                 ReleaseNotes = notes
                 OutputPath = Path.GetFullPath(nugetDir)
                 WorkingDir = dir
@@ -379,9 +350,7 @@ open Fake.Core.TargetOperators
   ==> "Restore"
   ==> "AssemblyInfo"
   ==> "UpdateSpec"
-  ==> "UpdateBindingsRewrite"
   ==> "Build"
-  ==> "RewriteBindings"
 //  ==> "RunAllTests"
   ==> "All"
   ==> "CreateNuGetPackage"
@@ -390,7 +359,8 @@ open Fake.Core.TargetOperators
   ==> "ReleaseOnGithub"
   ==> "ReleaseOnAll"
 
-"Build"
+// We build the nuget package so that appvayor can get the artifacts
+"CreateMetaPackage"
   ==> "RunCITests"
 
 //"Build"

@@ -848,15 +848,17 @@ namespace OpenTK.Rewrite
 
         private static object GetAttributeProperty(CustomAttribute attribute, string name)
         {
-            try
+            if (attribute.Properties.Count == 0) return null;
+
+            foreach (var property in attribute.Properties)
             {
-                var field = attribute.Properties.First(f => f.Name == name);
-                return field.Argument.Value;
+                if (property.Name == name)
+                {
+                    return property.Argument.Value;
+                }
             }
-            catch (InvalidOperationException)
-            {
-                return null;
-            }
+
+            return null;
         }
 
         private static CountAttribute GetCountAttribute(ParameterDefinition parameter)
@@ -896,7 +898,17 @@ namespace OpenTK.Rewrite
                     param => param.Name == countParameter.Substring(1));
 
                 il.Emit(OpCodes.Ldarg, pointerParam.Index);
-                il.Emit(OpCodes.Ldind_I4);
+                if (pointerParam.ParameterType.IsArray)
+                {
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    il.Emit(OpCodes.Ldelem_I4);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Ldind_I4);
+                }
+
+                il.Emit(OpCodes.Stloc, countVariable.Index);
             }
             else
             {
